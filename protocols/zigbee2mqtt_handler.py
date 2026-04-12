@@ -420,22 +420,28 @@ class Zigbee2MQTTHandler(ProtocolHandler):
             logger.exception("Failed to publish Z2M state for %s", friendly_name)
 
     async def _publish_bridge_devices(self):
-        """Publish the full device list to bridge/devices."""
+        """Publish ALL SDS devices to bridge/devices (not just zigbee2mqtt ones)."""
         if not self._client:
             return
 
         devices_list = []
-        for device in self._devices.values():
+        all_devices = await self.device_manager.get_all_devices()
+        for device in all_devices:
             config = device.get("protocol_config", {})
             friendly_name = config.get("friendly_name", device["name"].replace(" ", "_").lower())
+
+            # Ensure ieee_address exists
+            ieee = config.get("ieee_address", "")
+            if not ieee:
+                ieee = generate_ieee_address()
 
             # Build exposes based on device type
             exposes = self._build_exposes(device)
 
             entry = {
-                "ieee_address": config.get("ieee_address", ""),
+                "ieee_address": ieee,
                 "friendly_name": friendly_name,
-                "model_id": config.get("model_id", "SDS_Virtual"),
+                "model_id": config.get("model_id", config.get("model", "SDS_Virtual")),
                 "manufacturer": config.get("manufacturer", "SDS Simulator"),
                 "type": "Router",
                 "supported": True,
@@ -518,11 +524,26 @@ class Zigbee2MQTTHandler(ProtocolHandler):
         return []
 
     def _find_device_by_friendly_name(self, name: str) -> dict[str, Any] | None:
+        """Search ALL SDS devices by friendly_name (not just zigbee2mqtt ones)."""
+        # First check registered devices (faster)
         for device in self._devices.values():
             config = device.get("protocol_config", {})
             fn = config.get("friendly_name", device["name"].replace(" ", "_").lower())
             if fn == name:
                 return device
+        # Then check all device_manager devices
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We're already in async context — use sync access to cached devices
+                for device in self.device_manager._devices.values():
+                    config = device.get("protocol_config", {})
+                    fn = config.get("friendly_name", device["name"].replace(" ", "_").lower())
+                    if fn == name:
+                        return device
+        except Exception:
+            pass
         return None
 
     def _find_device_by_ieee(self, ieee: str) -> dict[str, Any] | None:

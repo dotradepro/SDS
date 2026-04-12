@@ -1,4 +1,5 @@
-"""HTTP protocol handler - Philips Hue + LIFX API emulation."""
+"""HTTP protocol handler - Philips Hue + LIFX API emulation.
+Exposes ALL SDS devices through Hue and LIFX APIs."""
 
 import json
 import logging
@@ -48,86 +49,106 @@ class HTTPHandler(ProtocolHandler):
 
     async def register_device(self, device: dict[str, Any]):
         self._devices[device["id"]] = device
-        protocol = device.get("protocol", "")
-        if protocol in ("http_hue", "http"):
-            if device["id"] not in self._hue_light_index:
-                self._hue_light_index[device["id"]] = self._next_hue_index
-                self._next_hue_index += 1
 
     async def unregister_device(self, device: dict[str, Any]):
         self._devices.pop(device["id"], None)
         self._hue_light_index.pop(device["id"], None)
 
     async def publish_state(self, device: dict[str, Any]):
-        # HTTP is pull-based, no push needed
         self._devices[device["id"]] = device
 
-    def get_hue_light_id(self, device_id: str) -> int | None:
-        return self._hue_light_index.get(device_id)
+    def _ensure_hue_id(self, device_id: str) -> int:
+        """Assign a Hue light ID to a device if it doesn't have one."""
+        if device_id not in self._hue_light_index:
+            self._hue_light_index[device_id] = self._next_hue_index
+            self._next_hue_index += 1
+        return self._hue_light_index[device_id]
 
-    def find_device_by_hue_id(self, hue_id: int) -> dict[str, Any] | None:
+    async def _get_all_devices(self) -> list[dict[str, Any]]:
+        """Get ALL devices from device_manager."""
+        return await self.device_manager.get_all_devices()
+
+    async def _find_device_by_hue_id(self, hue_id: int) -> dict[str, Any] | None:
+        """Find any SDS device by Hue ID."""
         for dev_id, idx in self._hue_light_index.items():
             if idx == hue_id:
-                return self._devices.get(dev_id)
+                return await self.device_manager.get_device(dev_id)
         return None
 
     def _state_to_hue(self, device: dict[str, Any]) -> dict[str, Any]:
         state = device.get("state", {})
         hue_state = {
-            "on": state.get("state") == "ON",
-            "bri": state.get("brightness", 254),
-            "ct": state.get("color_temp", 300),
+            "on": state.get("state") in ("ON", "on", "playing", "cleaning"),
+            "bri": int(state.get("brightness", 254)) if "brightness" in state else 254,
+            "ct": int(state.get("color_temp", 300)) if "color_temp" in state else 300,
             "alert": "none",
             "colormode": state.get("color_mode", "ct"),
             "reachable": device.get("is_online", True),
         }
-        color = state.get("color", {})
-        if color:
+        if state.get("color"):
             hue_state["hue"] = 0
             hue_state["sat"] = 0
         return hue_state
 
     def _device_to_hue(self, device: dict[str, Any], hue_id: int) -> dict[str, Any]:
         config = device.get("protocol_config", {})
+        dtype = device.get("type", "light")
+        hue_type_map = {
+            "light": "Extended color light",
+            "switch": "On/Off plug-in unit",
+            "climate": "ZLLTemperature",
+            "sensor": "ZLLPresence",
+            "cover": "Window covering device",
+            "lock": "On/Off plug-in unit",
+            "media_player": "Extended color light",
+            "vacuum": "On/Off plug-in unit",
+            "speaker": "Extended color light",
+            "camera": "ZLLPresence",
+        }
         return {
             "state": self._state_to_hue(device),
-            "type": "Extended color light",
+            "type": hue_type_map.get(dtype, "Extended color light"),
             "name": device["name"],
-            "modelid": config.get("model_id", "LCT016"),
-            "manufacturername": config.get("manufacturer", "Signify"),
+            "modelid": config.get("model_id", config.get("model", "SDS_Virtual")),
+            "manufacturername": config.get("manufacturer", "SDS Simulator"),
             "uniqueid": f"00:17:88:01:00:{hue_id:06d}-0b",
             "swversion": "1.0.0",
         }
 
     def _state_to_lifx(self, device: dict[str, Any]) -> dict[str, Any]:
         state = device.get("state", {})
+        ct = max(state.get("color_temp", 300), 1)
         return {
             "id": device["id"],
             "label": device["name"],
-            "power": "on" if state.get("state") == "ON" else "off",
-            "brightness": state.get("brightness", 254) / 254.0,
+            "power": "on" if state.get("state") in ("ON", "on", "playing") else "off",
+            "brightness": state.get("brightness", 254) / 254.0 if "brightness" in state else 1.0,
             "color": {
                 "hue": 0,
                 "saturation": 0,
-                "kelvin": int(1000000 / max(state.get("color_temp", 300), 1)),
+                "kelvin": int(1000000 / ct),
             },
             "connected": device.get("is_online", True),
+            "group": {"name": device.get("room", "")},
+            "product": {
+                "name": device.get("protocol_config", {}).get("model", device.get("type", "")),
+                "company": device.get("protocol_config", {}).get("manufacturer", "SDS"),
+            },
         }
 
 
-# ---- Hue API routes ----
+# ---- Hue API routes (expose ALL SDS devices) ----
 
 @router.get("/api/{token}/lights")
 async def hue_get_lights(token: str):
     h = _handler_instance
     if not h:
         return JSONResponse({})
+    all_devices = await h._get_all_devices()
     result = {}
-    for dev_id, device in h._devices.items():
-        if device.get("protocol") in ("http_hue", "http"):
-            hue_id = h.get_hue_light_id(dev_id)
-            if hue_id:
-                result[str(hue_id)] = h._device_to_hue(device, hue_id)
+    for device in all_devices:
+        hue_id = h._ensure_hue_id(device["id"])
+        result[str(hue_id)] = h._device_to_hue(device, hue_id)
     h.stats["messages_sent"] += 1
     return JSONResponse(result)
 
@@ -137,7 +158,7 @@ async def hue_get_light(token: str, light_id: int):
     h = _handler_instance
     if not h:
         return JSONResponse({"error": "not found"}, status_code=404)
-    device = h.find_device_by_hue_id(light_id)
+    device = await h._find_device_by_hue_id(light_id)
     if not device:
         return JSONResponse({"error": "not found"}, status_code=404)
     h.stats["messages_sent"] += 1
@@ -149,7 +170,7 @@ async def hue_set_light_state(token: str, light_id: int, request: Request):
     h = _handler_instance
     if not h:
         return JSONResponse({"error": "not found"}, status_code=404)
-    device = h.find_device_by_hue_id(light_id)
+    device = await h._find_device_by_hue_id(light_id)
     if not device:
         return JSONResponse({"error": "not found"}, status_code=404)
 
@@ -168,14 +189,6 @@ async def hue_set_light_state(token: str, light_id: int, request: Request):
 
     await h.device_manager.set_state(device["id"], state_changes, source="http_hue_command")
 
-    await event_bus.emit("protocol_event", {
-        "protocol": "http_hue",
-        "direction": "received",
-        "topic": f"/api/.../lights/{light_id}/state",
-        "payload": json.dumps(body),
-        "device_id": device["id"],
-    })
-
     success = [{"success": {f"/lights/{light_id}/state/{k}": v}} for k, v in body.items()]
     return JSONResponse(success)
 
@@ -192,6 +205,11 @@ async def hue_group_action(token: str, group_id: int, request: Request):
 
 @router.get("/api/{token}/config")
 async def hue_get_config(token: str):
+    h = _handler_instance
+    device_count = 0
+    if h:
+        all_devices = await h._get_all_devices()
+        device_count = len(all_devices)
     return JSONResponse({
         "name": "SDS Hue Bridge",
         "datastoreversion": "100",
@@ -200,20 +218,20 @@ async def hue_get_config(token: str):
         "mac": "00:17:88:00:00:01",
         "bridgeid": "001788FFFE000001",
         "modelid": "BSB002",
+        "zigbeechannel": 15,
+        "devicecount": device_count,
     })
 
 
-# ---- LIFX API routes ----
+# ---- LIFX API routes (expose ALL SDS devices) ----
 
 @router.get("/v1/lights")
 async def lifx_get_lights():
     h = _handler_instance
     if not h:
         return JSONResponse([])
-    result = []
-    for dev_id, device in h._devices.items():
-        if device.get("protocol") in ("http_lifx", "http"):
-            result.append(h._state_to_lifx(device))
+    all_devices = await h._get_all_devices()
+    result = [h._state_to_lifx(device) for device in all_devices]
     return JSONResponse(result)
 
 
@@ -226,12 +244,14 @@ async def lifx_set_state(selector: str, request: Request):
     body = await request.json()
     h.stats["messages_received"] += 1
 
-    # Find device by selector (id or label)
-    target = None
-    for device in h._devices.values():
-        if device["id"] == selector or device["name"] == selector:
-            target = device
-            break
+    # Find device by id or name among ALL devices
+    target = await h.device_manager.get_device(selector)
+    if not target:
+        all_devices = await h._get_all_devices()
+        for device in all_devices:
+            if device["name"] == selector:
+                target = device
+                break
 
     if not target:
         return JSONResponse({"error": "not found"}, status_code=404)
@@ -254,22 +274,29 @@ async def lifx_toggle(selector: str):
     if not h:
         return JSONResponse({"error": "not found"}, status_code=404)
 
-    for device in h._devices.values():
-        if device["id"] == selector or device["name"] == selector:
-            await h.device_manager.execute_command(device["id"], "toggle", {}, source="http_lifx_command")
-            return JSONResponse({"results": [{"status": "ok"}]})
+    target = await h.device_manager.get_device(selector)
+    if not target:
+        all_devices = await h._get_all_devices()
+        for device in all_devices:
+            if device["name"] == selector:
+                target = device
+                break
 
-    return JSONResponse({"error": "not found"}, status_code=404)
+    if not target:
+        return JSONResponse({"error": "not found"}, status_code=404)
+
+    await h.device_manager.execute_command(target["id"], "toggle", {}, source="http_lifx_command")
+    return JSONResponse({"results": [{"status": "ok"}]})
 
 
-# ---- Generic REST routes ----
+# ---- Generic REST routes (search ALL devices) ----
 
 @router.get("/devices/{device_id}/state")
 async def generic_get_state(device_id: str):
     h = _handler_instance
     if not h:
         return JSONResponse({"error": "not found"}, status_code=404)
-    device = h._devices.get(device_id)
+    device = await h.device_manager.get_device(device_id)
     if not device:
         return JSONResponse({"error": "not found"}, status_code=404)
     return JSONResponse(device.get("state", {}))
@@ -280,7 +307,7 @@ async def generic_command(device_id: str, request: Request):
     h = _handler_instance
     if not h:
         return JSONResponse({"error": "not found"}, status_code=404)
-    device = h._devices.get(device_id)
+    device = await h.device_manager.get_device(device_id)
     if not device:
         return JSONResponse({"error": "not found"}, status_code=404)
 

@@ -145,7 +145,7 @@ class HomeAssistantWSHandler(ProtocolHandler):
             entity_ids = [entity_ids]
 
         for entity_id in entity_ids:
-            device = self._find_device_by_entity_id(entity_id)
+            device = await self._find_device_by_entity_id(entity_id)
             if not device:
                 continue
 
@@ -176,9 +176,9 @@ class HomeAssistantWSHandler(ProtocolHandler):
         self.stats["messages_sent"] += 1
 
     async def _on_state_changed(self, event_data: dict):
-        """Broadcast state_changed events to subscribed WS clients."""
+        """Broadcast state_changed events for ALL devices to subscribed WS clients."""
         device_id = event_data.get("device_id")
-        device = self._devices.get(device_id)
+        device = await self.device_manager.get_device(device_id)
         if not device:
             return
 
@@ -206,9 +206,10 @@ class HomeAssistantWSHandler(ProtocolHandler):
                         pass
 
     async def _get_all_states(self) -> list[dict]:
+        """Return ALL SDS devices as HA entities."""
         states = []
-        for device in self._devices.values():
-            entity_id = self._device_to_entity_id(device)
+        all_devices = await self.device_manager.get_all_devices()
+        for device in all_devices:
             state = device.get("state", {})
             states.append(self._state_to_ha(device, state))
         return states
@@ -239,8 +240,10 @@ class HomeAssistantWSHandler(ProtocolHandler):
         name = device.get("name", "unknown").lower().replace(" ", "_")
         return f"{dtype}.{name}"
 
-    def _find_device_by_entity_id(self, entity_id: str) -> dict | None:
-        for device in self._devices.values():
+    async def _find_device_by_entity_id(self, entity_id: str) -> dict | None:
+        """Search ALL SDS devices by entity_id."""
+        all_devices = await self.device_manager.get_all_devices()
+        for device in all_devices:
             if self._device_to_entity_id(device) == entity_id:
                 return device
         return None
