@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/lib/store';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Switch } from '@/components/ui';
 
 export function Settings() {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useStore();
 
   return (
@@ -63,7 +65,7 @@ export function Settings() {
         <CardContent className="space-y-4">
           <div className="flex gap-3">
             <Button variant="outline">Експорт конфігурації</Button>
-            <Button variant="outline">Імпорт конфігурації</Button>
+            <Button variant="outline" onClick={() => navigate('/import')}>Імпорт з зовнішньої системи</Button>
           </div>
           <Button variant="destructive" onClick={() => {
             if (confirm('Скинути всі пристрої? Це видалить усі пристрої та їх історію.')) {

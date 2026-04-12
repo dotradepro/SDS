@@ -109,3 +109,47 @@ export interface WSMessage {
   type: string;
   [key: string]: any;
 }
+
+// Import
+export interface AuthField {
+  name: string;
+  label: string;
+  type: string;
+  placeholder: string;
+  required: boolean;
+  default_value: string;
+}
+
+export interface ImportSource {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'local' | 'cloud';
+  auth_type: string;
+  auth_fields: AuthField[];
+  what_imports: string;
+}
+
+export interface DiscoveredDevice {
+  temp_id: string;
+  name: string;
+  type: string;
+  room: string;
+  manufacturer: string;
+  model: string;
+  protocol: string;
+  source_entity_id: string;
+}
+
+export interface ImportConnectResponse {
+  session_id: string;
+  status: string;
+  system_info: Record<string, any>;
+  discovered_devices: DiscoveredDevice[];
+}
+
+export interface ImportResult {
+  created_devices: string[];
+  count: number;
+}

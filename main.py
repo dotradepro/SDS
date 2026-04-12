@@ -25,6 +25,7 @@ from protocols.mdns_handler import MDNSHandler
 from api.devices import router as devices_router
 from api.events import router as events_router
 from api.scenarios import router as scenarios_router
+from api.imports import router as imports_router
 from api.websocket import router as ws_router, setup_event_forwarding
 
 logging.basicConfig(
@@ -147,6 +148,7 @@ app.add_middleware(
 app.include_router(devices_router)
 app.include_router(events_router)
 app.include_router(scenarios_router)
+app.include_router(imports_router)
 app.include_router(ws_router)
 
 # HTTP protocol emulation routes (Hue, LIFX, generic)

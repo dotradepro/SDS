@@ -1,4 +1,4 @@
-import type { Device, DeviceCreate, Event, Scenario, ProtocolStatus, DeviceTemplate, Z2MGroup } from '@/types';
+import type { Device, DeviceCreate, Event, Scenario, ProtocolStatus, DeviceTemplate, Z2MGroup, ImportSource, ImportConnectResponse, ImportResult } from '@/types';
 
 const BASE = '/api/v1';
 
@@ -76,3 +76,14 @@ export const addGroupMember = (groupId: number, deviceId: string) =>
   request<void>(`/groups/${groupId}/members`, { method: 'POST', body: JSON.stringify({ device_id: deviceId }) });
 export const removeGroupMember = (groupId: number, deviceId: string) =>
   request<void>(`/groups/${groupId}/members/${deviceId}`, { method: 'DELETE' });
+
+// Import
+export const getImportSources = () => request<ImportSource[]>('/import/sources');
+export const connectImportSource = (source_id: string, auth_data: Record<string, string>) =>
+  request<ImportConnectResponse>('/import/connect', {
+    method: 'POST', body: JSON.stringify({ source_id, auth_data }),
+  });
+export const executeImport = (session_id: string, selected_ids: string[]) =>
+  request<ImportResult>('/import/execute', {
+    method: 'POST', body: JSON.stringify({ session_id, selected_ids }),
+  });

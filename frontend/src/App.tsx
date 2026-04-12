@@ -8,6 +8,7 @@ import { DeviceDetail } from '@/pages/DeviceDetail';
 import { Events } from '@/pages/Events';
 import { Scenarios } from '@/pages/Scenarios';
 import { Protocols } from '@/pages/Protocols';
+import { Import } from '@/pages/Import';
 import { Settings } from '@/pages/Settings';
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/scenarios" element={<Scenarios />} />
         <Route path="/protocols" element={<Protocols />} />
+        <Route path="/import" element={<Import />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </Layout>
