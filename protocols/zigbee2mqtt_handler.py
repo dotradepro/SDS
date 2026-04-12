@@ -61,8 +61,32 @@ class Zigbee2MQTTHandler(ProtocolHandler):
                     self.status_message = "Zigbee2MQTT bridge online"
                     logger.info("Zigbee2MQTT handler connected")
 
-                    # Publish bridge state
-                    await client.publish(f"{self.prefix}/bridge/state", "online", retain=True)
+                    # Publish bridge state (JSON format, Z2M 1.19+)
+                    await client.publish(
+                        f"{self.prefix}/bridge/state",
+                        json.dumps({"state": "online"}),
+                        retain=True,
+                    )
+
+                    # Publish bridge info (Z2M 1.28+)
+                    await client.publish(
+                        f"{self.prefix}/bridge/info",
+                        json.dumps({
+                            "version": "1.42.0",
+                            "commit": "a3f5e2b",
+                            "coordinator": {
+                                "type": "zStack3x0",
+                                "meta": {"revision": 20240315, "transportrev": 2},
+                            },
+                            "log_level": "info",
+                            "permit_join": False,
+                            "config": {
+                                "homeassistant": True,
+                                "permit_join": False,
+                            },
+                        }),
+                        retain=True,
+                    )
 
                     # Subscribe to command topics
                     await client.subscribe(f"{self.prefix}/+/set")

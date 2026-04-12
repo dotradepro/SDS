@@ -69,8 +69,8 @@ class HomeAssistantWSHandler(ProtocolHandler):
         self._clients.add(websocket)
         self._subscriptions[websocket] = {}
         try:
-            # Auth handshake
-            await websocket.send(json.dumps({"type": "auth_required", "ha_version": "2024.1.0"}))
+            # Auth handshake (matching real HA 2025.x format)
+            await websocket.send(json.dumps({"type": "auth_required", "ha_version": "2025.12.1"}))
 
             async for raw in websocket:
                 try:
@@ -83,7 +83,7 @@ class HomeAssistantWSHandler(ProtocolHandler):
 
                 if msg_type == "auth":
                     # Accept ANY token — simulate successful OAuth2 authorization
-                    await websocket.send(json.dumps({"type": "auth_ok", "ha_version": "2024.12.3"}))
+                    await websocket.send(json.dumps({"type": "auth_ok", "ha_version": "2025.12.1"}))
 
                 elif msg_type == "subscribe_events":
                     event_type = msg.get("event_type", "state_changed")

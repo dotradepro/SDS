@@ -6,7 +6,7 @@ IMPORT_PRESETS: dict[str, dict] = {
     # =========================================================================
     "home_assistant": {
         "system_info": {
-            "version": "2024.12.3",
+            "version": "2025.12.1",
             "name": "Home Assistant",
             "location": "Kyiv, Ukraine",
             "units": "metric",
@@ -191,7 +191,7 @@ IMPORT_PRESETS: dict[str, dict] = {
     # =========================================================================
     "philips_hue": {
         "system_info": {
-            "version": "1.62.0",
+            "version": "1.65.0",
             "name": "Philips Hue Bridge",
             "model": "BSB002",
             "bridge_id": "001788FFFE2A5E3B",
@@ -344,7 +344,7 @@ IMPORT_PRESETS: dict[str, dict] = {
     # =========================================================================
     "mqtt_broker": {
         "system_info": {
-            "version": "2.0.18",
+            "version": "2.0.21",
             "name": "Eclipse Mosquitto",
             "device_count": 6,
             "topic_count": 24,
@@ -370,8 +370,8 @@ IMPORT_PRESETS: dict[str, dict] = {
     # =========================================================================
     "tuya": {
         "system_info": {
-            "version": "3.5",
-            "name": "Tuya Cloud",
+            "version": "2.0",
+            "name": "Tuya Cloud IoT Core",
             "region": "EU",
             "uid": "eu1642857***",
             "device_count": 9,

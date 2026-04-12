@@ -195,10 +195,11 @@ async def hue_set_light_state(token: str, light_id: int, request: Request):
 
 @router.post("/api")
 async def hue_create_user(request: Request):
-    """Simulate Hue Bridge user registration — always succeeds, returns a token."""
+    """Simulate Hue Bridge user registration — always succeeds (as if link button was pressed)."""
     import uuid
-    token = uuid.uuid4().hex[:20]
-    return JSONResponse([{"success": {"username": token}}])
+    username = uuid.uuid4().hex[:32]
+    clientkey = uuid.uuid4().hex[:32].upper()
+    return JSONResponse([{"success": {"username": username, "clientkey": clientkey}}])
 
 
 @router.get("/api/{token}/groups")
@@ -220,13 +221,16 @@ async def hue_get_config(token: str):
         device_count = len(all_devices)
     return JSONResponse({
         "name": "SDS Hue Bridge",
-        "datastoreversion": "100",
-        "swversion": "1953188020",
-        "apiversion": "1.53.0",
-        "mac": "00:17:88:00:00:01",
-        "bridgeid": "001788FFFE000001",
+        "datastoreversion": "178",
+        "swversion": "1968097080",
+        "apiversion": "1.65.0",
+        "mac": "00:17:88:2A:5E:3B",
+        "bridgeid": "001788FFFE2A5E3B",
+        "factorynew": False,
+        "replacesbridgeid": None,
         "modelid": "BSB002",
-        "zigbeechannel": 15,
+        "starterkitid": "",
+        "zigbeechannel": 25,
         "devicecount": device_count,
     })
 
