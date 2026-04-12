@@ -193,6 +193,14 @@ async def hue_set_light_state(token: str, light_id: int, request: Request):
     return JSONResponse(success)
 
 
+@router.post("/api")
+async def hue_create_user(request: Request):
+    """Simulate Hue Bridge user registration — always succeeds, returns a token."""
+    import uuid
+    token = uuid.uuid4().hex[:20]
+    return JSONResponse([{"success": {"username": token}}])
+
+
 @router.get("/api/{token}/groups")
 async def hue_get_groups(token: str):
     return JSONResponse({})

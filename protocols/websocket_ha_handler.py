@@ -82,12 +82,8 @@ class HomeAssistantWSHandler(ProtocolHandler):
                 msg_id = msg.get("id")
 
                 if msg_type == "auth":
-                    token = msg.get("access_token", "")
-                    if token == self.token:
-                        await websocket.send(json.dumps({"type": "auth_ok", "ha_version": "2024.1.0"}))
-                    else:
-                        await websocket.send(json.dumps({"type": "auth_invalid", "message": "Invalid token"}))
-                        break
+                    # Accept ANY token — simulate successful OAuth2 authorization
+                    await websocket.send(json.dumps({"type": "auth_ok", "ha_version": "2024.12.3"}))
 
                 elif msg_type == "subscribe_events":
                     event_type = msg.get("event_type", "state_changed")
