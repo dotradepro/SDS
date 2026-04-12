@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+*.db
+
+# Data
+data/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# TLS certificates (generated, not committed)
+certs/*.key
+certs/*.crt
+certs/*.csr
+certs/*.srl
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+mosquitto_data/

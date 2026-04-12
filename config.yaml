@@ -1,0 +1,34 @@
+mqtt:
+  broker_host: mosquitto
+  broker_port: 1883
+  client_id: sds_simulator
+
+http:
+  host: 0.0.0.0
+  port: 7000
+
+coap:
+  host: 0.0.0.0
+  port: 5683
+
+mdns:
+  enabled: true
+
+ssdp:
+  enabled: true
+
+tuya:
+  enabled: true
+  port: 6668
+
+miio:
+  enabled: true
+  port: 54321
+
+zigbee2mqtt:
+  bridge_prefix: zigbee2mqtt
+
+ha_websocket:
+  enabled: true
+  port: 8123
+  token: test_token_for_selena

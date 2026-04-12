@@ -1,0 +1,47 @@
+services:
+  sds-backend:
+    build: .
+    container_name: sds-backend
+    ports:
+      - "7000:7000"
+      - "5683:5683/udp"
+      - "6668:6668"
+      - "54321:54321/udp"
+      - "8123:8123"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - sds_data:/app/data
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - DATABASE_URL=sqlite:////app/data/sds.db
+    depends_on:
+      mosquitto:
+        condition: service_started
+    restart: unless-stopped
+
+  sds-frontend:
+    build: ./frontend
+    container_name: sds-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - sds-backend
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: sds-mosquitto
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./certs:/mosquitto/certs
+      - mosquitto_data:/mosquitto/data
+    restart: unless-stopped
+
+volumes:
+  sds_data:
+  mosquitto_data:
