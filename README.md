@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12-green?logo=python)](https://python.org)
 [![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Project-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/dotradepro)
 
 Локальний симулятор розумних пристроїв для тестування голосового асистента **Selena**. Імітує реальні пристрої на рівні протоколу — Selena не знає, що це симулятор.
 
@@ -280,6 +281,12 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## Підтримати проект
+
+Якщо SDS корисний для вас — підтримайте розробку:
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/dotradepro)
 
 ## Ліцензія
 
