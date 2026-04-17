@@ -2,8 +2,9 @@
 # Generate self-signed TLS certificates for MQTT over TLS
 set -e
 
-CERT_DIR="$(cd "$(dirname "$0")/../certs" && pwd)"
-mkdir -p "$CERT_DIR"
+CERT_DIR_REL="$(dirname "$0")/../certs"
+mkdir -p "$CERT_DIR_REL"
+CERT_DIR="$(cd "$CERT_DIR_REL" && pwd)"
 
 # Skip if certs already exist
 if [ -f "$CERT_DIR/server.crt" ] && [ -f "$CERT_DIR/server.key" ]; then
