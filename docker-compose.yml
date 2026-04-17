@@ -15,6 +15,10 @@ services:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
       - DATABASE_URL=sqlite:////app/data/sds.db
+      # On a fresh install (empty DB) SDS creates one device per
+      # (type × protocol) pair so the UI isn't blank. Set to "false"
+      # to start with an empty catalog instead.
+      - SDS_SEED_DEMO=${SDS_SEED_DEMO:-true}
     depends_on:
       mosquitto:
         condition: service_started
