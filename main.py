@@ -14,6 +14,7 @@ from core.database import init_db
 from core.device_manager import device_manager
 from core.scheduler import scheduler
 from core.event_bus import event_bus
+from core.seed import seed_demo_if_empty
 
 from protocols.mqtt_handler import MQTTHandler
 from protocols.zigbee2mqtt_handler import Zigbee2MQTTHandler
@@ -111,6 +112,10 @@ async def lifespan(app: FastAPI):
             await mdns_handler.register_device(device)
         except Exception:
             pass
+
+    # Seed one demo device per (type × protocol) on fresh installs.
+    # Controlled by SDS_SEED_DEMO env var (default "true"; set "false" to skip).
+    await seed_demo_if_empty(device_manager, mdns_handler)
 
     # Load and start scenarios
     await scheduler.load_from_db()
